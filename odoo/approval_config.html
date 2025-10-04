@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Approval Configuration - GlobalTech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-xl">
+        <h1 class="text-3xl font-bold mb-6 text-purple-700">Approval Flow Configuration (LLM Policy)</h1>
+        <p class="mb-8 text-gray-600">Define multi-step sequential and conditional approval rules for the Semantic Policy Engine (LLM).</p>
+
+        <a href="admin_dashboard.html" class="px-4 py-2 bg-gray-500 text-white font-semibold rounded-md hover:bg-gray-600 mb-6 inline-block">
+                &larr; Back to Dashboard
+        </a>
+
+        <form id="configForm">
+            
+            <h2 class="text-xl font-semibold mb-3">1. Default Sequential Flow </h2>
+            <div id="flowStepsContainer" class="space-y-3 mb-6 p-4 border rounded-lg bg-indigo-50">
+                </div>
+            <button type="button" onclick="addFlowStep()" class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 mb-6">
+                + Add Approval Step
+            </button>
+
+            <h2 class="text-xl font-semibold mb-3">2. Conditional (Hybrid) Rules [cite: 37]</h2>
+            <div class="p-4 border rounded-lg bg-yellow-50 mb-6">
+                <p class="mb-4 text-sm font-medium text-gray-700">This rule is applied for claims over $2000.</p>
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Conditional Rule Type</label>
+                    <select id="conditionalRuleType" class="w-full p-2 border rounded-md">
+                        <option value="PERCENTAGE">Percentage rule (e.g., 60% of approvers) [cite: 39]</option>
+                        <option value="SPECIFIC">Specific approver rule (e.g., CFO) [cite: 40]</option>
+                        <option value="HYBRID">Hybrid rule (60% OR CFO approves) [cite: 41]</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="col-span-2 flex justify-end mt-6">
+                <button type="submit" class="px-6 py-2 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 transition duration-150">
+                    Save Global Policy
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="scripts.js"></script>
+    <script>
+        let approvalFlowConfig = [
+            { sequence: 1, role: "MANAGER" },
+            { sequence: 2, role: "FINANCE" }
+        ];
+
+        function renderFlowSteps() {
+            const container = document.getElementById('flowStepsContainer');
+            container.innerHTML = '';
+            
+            approvalFlowConfig.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'flex items-center space-x-3';
+                stepDiv.innerHTML = `
+                    <span class="font-bold text-lg">${index + 1}.</span>
+                    <select class="p-2 border rounded-md flex-grow" onchange="updateFlowStep(${index}, this.value)">
+                        <option value="MANAGER" ${step.role === 'MANAGER' ? 'selected' : ''}>Manager</option>
+                        <option value="FINANCE" ${step.role === 'FINANCE' ? 'selected' : ''}>Finance [cite: 28]</option>
+                        <option value="DIRECTOR" ${step.role === 'DIRECTOR' ? 'selected' : ''}>Director [cite: 31]</option>
+                        <option value="ADMIN" ${step.role === 'ADMIN' ? 'selected' : ''}>Admin</option>
+                    </select>
+                    <button type="button" onclick="removeFlowStep(${index})" class="text-red-500 hover:text-red-700">
+                        &times;
+                    </button>
+                `;
+                container.appendChild(stepDiv);
+            });
+        }
+
+        function addFlowStep() {
+            const nextSequence = approvalFlowConfig.length + 1;
+            approvalFlowConfig.push({ sequence: nextSequence, role: "FINANCE" });
+            renderFlowSteps();
+        }
+
+        function removeFlowStep(index) {
+            approvalFlowConfig.splice(index, 1);
+            approvalFlowConfig = approvalFlowConfig.map((step, i) => ({ ...step, sequence: i + 1 }));
+            renderFlowSteps();
+        }
+
+        function updateFlowStep(index, newRole) {
+            approvalFlowConfig[index].role = newRole;
+        }
+
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const ruleType = document.getElementById('conditionalRuleType').value;
+
+            const finalPolicy = {
+                is_manager_first: true, 
+                sequential_flow: approvalFlowConfig,
+                conditional_rule: {
+                    type: ruleType,
+                    threshold: "Amount > 2000 USD"
+                }
+            };
+            
+            console.log("Global Policy Saved:", finalPolicy); 
+            alert("Global Approval Policy Saved! The Semantic Policy Engine is now configured.");
+        });
+
+        renderFlowSteps();
+    </script>
+</body>
+</html>

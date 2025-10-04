@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Global Audit & Override - GlobalTech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-xl">
+        <h1 class="text-3xl font-bold mb-6 text-red-700">Admin Dashboard: Global Audit & Override</h1>
+        <p class="mb-6 text-gray-600">Full visibility and emergency override capabilities for GlobalTech Solutions.</p>
+
+        <div class="flex space-x-4 mb-8 border-b pb-4">
+            <a href="admin_user_management.html" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                User & Role Management
+            </a>
+            <a href="approval_config.html" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+                Configure Approval Rules (LLM Policy) 
+            </a>
+        </div>
+
+        <h2 class="text-xl font-semibold mb-3">All Company Expenses (Global View) </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="py-3 px-4 border-b">ID</th>
+                        <th class="py-3 px-4 border-b">Employee</th>
+                        <th class="py-3 px-4 border-b">Amount (USD)</th>
+                        <th class="py-3 px-4 border-b">Compliance (ZKP)</th>
+                        <th class="py-3 px-4 border-b">Current Status</th>
+                        <th class="py-3 px-4 border-b">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="globalExpenseTable">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="overrideModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg">
+            <h2 class="text-2xl font-bold mb-4 text-red-700">Admin Override: Claim #<span id="modalExpenseId"></span> </h2>
+            
+            <div class="p-3 bg-red-50 border-l-4 border-red-500 mb-4">
+                <p class="font-semibold text-red-800">Warning: Override skips the standard DLT/Smart Contract steps.</p>
+            </div>
+
+            <p class="mb-4"><strong>Current Status:</strong> <span id="modalCurrentStatus"></span></p>
+
+            <label class="block mb-2 text-sm font-medium text-gray-700">Override Action</label>
+            <select id="overrideAction" class="w-full p-2 border rounded-md mb-4">
+                <option value="APPROVE_AND_SETTLE">Final Approve & Instant Settle</option>
+                <option value="REJECT_FINAL">Final Reject</option>
+            </select>
+
+            <textarea id="overrideComment" rows="3" placeholder="Reason for Override (Mandatory)" class="p-2 border border-gray-300 rounded-md w-full mb-4"></textarea>
+
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="document.getElementById('overrideModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
+                <button onclick="handleOverride()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Execute Override</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+    <script>
+        let currentOverrideExpenseId = null;
+
+        function getZkpClass(status) {
+            return status === 'COMPLIANT' ? 'text-green-600 font-bold' : 'text-red-600 font-bold';
+        }
+
+        function getStatusClass(status) {
+            if (status.includes('SETTLED')) return 'bg-green-100 text-green-800';
+            if (status.includes('PENDING')) return 'bg-yellow-100 text-yellow-800';
+            if (status.includes('REJECTED')) return 'bg-red-100 text-red-800';
+            return 'bg-gray-100 text-gray-800';
+        }
+
+        function loadGlobalExpenseTable() {
+            const tableBody = document.getElementById('globalExpenseTable');
+            tableBody.innerHTML = '';
+            
+            if (expenses.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">No expenses submitted yet.</td></tr>';
+                return;
+            }
+
+            expenses.forEach(expense => {
+                const user = SIMULATED_USERS[expense.employee_id];
+                const statusText = expense.status.replace(/_/g, ' ');
+
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                
+                row.innerHTML = `
+                    <td class="py-3 px-4">${expense.id}</td>
+                    <td class="py-3 px-4">${user ? user.name.split(' (')[0] : 'Unknown'}</td>
+                    <td class="py-3 px-4 font-semibold">${expense.amount_usd} ${COMPANY_BASE_CURRENCY}</td>
+                    <td class="py-3 px-4 ${getZkpClass(expense.zkp_status)}">${expense.zkp_status}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full ${getStatusClass(expense.status)}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <button onclick="openOverrideModal(${expense.id})" class="text-red-600 hover:text-red-800 text-sm font-semibold">OVERRIDE</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function openOverrideModal(expenseId) {
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            currentOverrideExpenseId = expenseId;
+            document.getElementById('modalExpenseId').textContent = expenseId;
+            document.getElementById('modalCurrentStatus').textContent = expense.status.replace(/_/g, ' ');
+
+            document.getElementById('overrideModal').classList.remove('hidden');
+            document.getElementById('overrideModal').classList.add('flex');
+        }
+
+        function handleOverride() {
+            const expenseId = currentOverrideExpenseId;
+            const action = document.getElementById('overrideAction').value;
+            const comment = document.getElementById('overrideComment').value;
+
+            if (!comment) {
+                alert("The reason for override is mandatory.");
+                return;
+            }
+
+            let expense = expenses.find(e => e.id === expenseId);
+            
+            if (action === 'APPROVE_AND_SETTLE') {
+                expense.status = "SETTLED_ADMIN_OVERRIDE";
+                alert(`SUCCESS: Claim ${expenseId} was INSTANTLY SETTLED via Admin Override.`);
+            } else if (action === 'REJECT_FINAL') {
+                expense.status = "REJECTED_ADMIN_OVERRIDE";
+                alert(`SUCCESS: Claim ${expenseId} was FINALLY REJECTED via Admin Override.`);
+            }
+            
+            expense.override_comment = comment;
+            saveExpenses();
+
+            document.getElementById('overrideModal').classList.add('hidden');
+            loadGlobalExpenseTable(); 
+        }
+
+        loadGlobalExpenseTable();
+    </script>
+</body>
+</html>

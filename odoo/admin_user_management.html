@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin User Management - GlobalTech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-xl">
+        <h1 class="text-3xl font-bold mb-6 text-red-700">User & Role Management</h1>
+        <p class="mb-6 text-gray-600">Create Employees & Managers, set roles, and define reporting relationships.</p>
+
+        <div class="flex space-x-4 mb-8 border-b pb-4">
+            <a href="admin_dashboard.html" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
+                &larr; Back to Global Audit
+            </a>
+            <button onclick="openUserModal('new')" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                + Create New User [cite: 13]
+            </button>
+        </div>
+
+        <h2 class="text-xl font-semibold mb-3">Company Users</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="py-3 px-4 border-b">ID</th>
+                        <th class="py-3 px-4 border-b">Name</th>
+                        <th class="py-3 px-4 border-b">Role</th>
+                        <th class="py-3 px-4 border-b">Manager ID</th>
+                        <th class="py-3 px-4 border-b">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="userTable">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="userModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4" id="modalTitle">Create New User</h2>
+            
+            <form id="userForm">
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="userName" required class="w-full p-2 border rounded-md">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Role</label>
+                    <select id="userRole" required class="w-full p-2 border rounded-md">
+                        <option value="EMPLOYEE">Employee [cite: 14]</option>
+                        <option value="MANAGER">Manager [cite: 14]</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Manager ID (Required for Employee) [cite: 15]</label>
+                    <input type="number" id="managerId" placeholder="e.g., 1002" class="w-full p-2 border rounded-md">
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="document.getElementById('userModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+    <script>
+        let editingUserId = null; 
+
+        function loadUserTable() {
+            const tableBody = document.getElementById('userTable');
+            tableBody.innerHTML = '';
+            
+            Object.values(SIMULATED_USERS).forEach(user => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="py-3 px-4">${user.id}</td>
+                    <td class="py-3 px-4">${user.name.split(' (')[0]}</td>
+                    <td class="py-3 px-4 font-semibold text-sm">${user.role}</td>
+                    <td class="py-3 px-4">${user.manager_id || 'N/A'}</td>
+                    <td class="py-3 px-4">
+                        <button onclick="openUserModal('edit', ${user.id})" class="text-indigo-600 hover:text-indigo-800 text-sm">Edit Role</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function openUserModal(mode, userId = null) {
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('modalTitle');
+            const userForm = document.getElementById('userForm');
+            
+            userForm.reset();
+            editingUserId = userId;
+
+            if (mode === 'new') {
+                title.textContent = 'Create New User';
+            } else {
+                title.textContent = `Edit User ${userId}`;
+                const user = SIMULATED_USERS[userId];
+                document.getElementById('userName').value = user.name.split(' (')[0];
+                document.getElementById('userRole').value = user.role;
+                document.getElementById('managerId').value = user.manager_id || '';
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        document.getElementById('userForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('userName').value;
+            const role = document.getElementById('userRole').value;
+            const managerId = parseInt(document.getElementById('managerId').value) || null;
+            
+            const newName = `${name} (${role})`;
+            
+            if (!editingUserId) {
+                const newId = Math.max(...Object.keys(SIMULATED_USERS).map(Number)) + 1;
+                SIMULATED_USERS[newId] = { 
+                    id: newId, 
+                    name: newName, 
+                    role: role, 
+                    manager_id: role === 'EMPLOYEE' ? managerId : null,
+                    redirect: role === 'EMPLOYEE' ? 'employee_history.html' : (role === 'MANAGER' ? 'manager.html' : 'admin_dashboard.html') 
+                };
+                alert(`New User ${newId} created: ${newName}.`);
+            } else {
+                SIMULATED_USERS[editingUserId] = { 
+                    ...SIMULATED_USERS[editingUserId], 
+                    name: newName, 
+                    role, 
+                    manager_id: role === 'EMPLOYEE' ? managerId : null,
+                    redirect: role === 'EMPLOYEE' ? 'employee_history.html' : (role === 'MANAGER' ? 'manager.html' : 'admin_dashboard.html')
+                };
+                alert(`User ${editingUserId} updated.`);
+            }
+            
+            document.getElementById('userModal').classList.add('hidden');
+            loadUserTable();
+        });
+
+        loadUserTable();
+    </script>
+</body>
+</html>

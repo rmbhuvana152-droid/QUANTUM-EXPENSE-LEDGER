@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Expense Ledger (QEL) - Secure Login Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #000000 100%);
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: #1e293b; 
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .role-card {
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 2px solid transparent;
+            background-color: #334155;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .role-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            border-color: var(--theme-color, #a78bfa);
+        }
+        .theme-ADMIN_AUDIT { --theme-color: #f87171; } 
+        .theme-MANAGER, .theme-CFO, .theme-FINANCE { --theme-color: #34d399; } 
+        .theme-EMPLOYEE { --theme-color: #6366f1; } 
+
+        .btn-theme { 
+            background-color: var(--theme-color); 
+            transition: all 0.15s ease;
+        }
+        .btn-theme:hover {
+            filter: brightness(1.1);
+        }
+        .theme-link { color: var(--theme-color); }
+        .theme-header { color: var(--theme-color); }
+        
+        input {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+        }
+        input:focus {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-color) 40%, transparent);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="mainContainer" class="login-container w-full max-w-5xl p-16">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-extrabold mb-2 tracking-tight theme-link">QUANTUM EXPENSE LEDGER (QEL)</h1>
+            <p class="text-lg text-gray-400 font-light">Zero-Knowledge Proofs & AI-Driven Compliance for GlobalTech Solutions</p>
+        </header>
+
+        <div id="roleSelectionView">
+            <h2 class="text-2xl font-semibold mb-8 text-center text-gray-300 border-b border-gray-700 pb-4">Select Your Enterprise Role</h2>
+            <div class="grid grid-cols-3 gap-10 mb-12">
+                
+                <div class="role-card p-10 rounded-xl text-center" style="--theme-color: #f87171;" onclick="showLogin('ADMIN_AUDIT')">
+                    <div class="text-4xl mb-3 text-red-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3v-1m18-6v-1a3 3 0 00-3-3H6a3 3 0 00-3 3v1"/></svg>
+                    </div>
+                    <p class="font-bold text-xl text-red-400">Admin/Audit</p>
+                    <p class="text-sm text-gray-400 mt-1">Override, DLT Health, User Configuration</p>
+                </div>
+                
+                <div class="role-card p-10 rounded-xl text-center" style="--theme-color: #34d399;" onclick="showLogin('MANAGER')">
+                    <div class="text-4xl mb-3 text-green-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.143"/></svg>
+                    </div>
+                    <p class="font-bold text-xl text-green-400">Approver (Mgr/CFO/Finance)</p>
+                    <p class="text-sm text-gray-400 mt-1">Hybrid Flow, Liquidity, & Final Sign-off</p>
+                </div>
+                
+                <div class="role-card p-10 rounded-xl text-center" style="--theme-color: #6366f1;" onclick="showLogin('EMPLOYEE')">
+                    <div class="text-4xl mb-3 text-indigo-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1v-3.25m-7.25 0h11.5m-11.5 0h11.5M10.5 14.5L12 16L13.5 14.5m-3-10L12 3L13.5 4.5m-3 3L12 9L13.5 7.5m-3 3L12 12L13.5 10.5M12 21.5L12 21.5"/></svg>
+                    </div>
+                    <p class="font-bold text-xl text-indigo-400">Employee</p>
+                    <p class="text-sm text-gray-400 mt-1">AI Predictive Budget & Anomaly Detection</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="loginView" class="hidden-initial" style="opacity: 0; transform: translateY(20px); pointer-events: none;">
+            <button onclick="showRoleSelection()" class="text-gray-500 hover:text-gray-300 mb-8 flex items-center text-sm font-medium transition duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Change Role Selection
+            </button>
+
+            <h2 id="loginHeader" class="text-3xl font-extrabold mb-6 text-center theme-header">Login as [ROLE]</h2>
+            
+            <div class="max-w-sm mx-auto pt-4">
+
+                <form id="loginForm">
+                    <div class="mb-6">
+                        <label for="username" id="usernameLabel" class="block mb-2 text-sm font-medium text-gray-300">User ID</label>
+                        <input type="number" id="username" placeholder="Enter your assigned User ID" required class="w-full p-3 rounded-lg transition duration-150">
+                        <p id="demoHint" class="text-xs mt-1 font-medium"></p>
+                    </div>
+
+                    <div class="mb-8">
+                        <label for="password" class="block mb-2 text-sm font-medium text-gray-300">Biometric Key (Simulated)</label>
+                        <input type="password" id="password" value="********" required disabled class="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-gray-500 cursor-not-allowed">
+                    </div>
+                    
+                    <button type="submit" class="btn-theme w-full py-3 text-white font-extrabold text-lg rounded-lg transition duration-150 shadow-xl mb-4">
+                        Secure DLT Access
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="scripts.js"></script>
+    <script>
+        if (typeof SIMULATED_USERS === 'undefined') {
+            console.error("scripts.js not loaded. Cannot run login logic.");
+        }
+
+        let selectedRole = null;
+        const roleSelectionView = document.getElementById('roleSelectionView');
+        const loginView = document.getElementById('loginView');
+        const mainContainer = document.getElementById('mainContainer');
+        const demoHint = document.getElementById('demoHint');
+
+        function showLogin(role) {
+            selectedRole = role;
+            
+            let headerName = '';
+            if (role === 'ADMIN_AUDIT') headerName = 'Admin/Audit';
+            if (role === 'MANAGER') headerName = 'Approver (Manager/Finance)';
+            if (role === 'EMPLOYEE') headerName = 'Employee';
+            
+            mainContainer.className = mainContainer.className.replace(/theme-[A-Z_]+/, '').trim() + ' theme-' + role;
+            
+            document.getElementById('loginHeader').textContent = `Login as ${headerName}`;
+            
+            let hintText = '';
+            if (role === 'ADMIN_AUDIT') {
+                 hintText = 'Demo Hint: Use 1001 (Alex Chen - Admin/Audit)';
+                 demoHint.classList.add('text-red-400'); demoHint.classList.remove('text-green-400', 'text-indigo-400');
+            }
+            if (role === 'MANAGER') {
+                 hintText = 'Demo Hint: Use 1002 (Mgr), 1004 (CFO), 1005/1006 (Finance)';
+                 demoHint.classList.add('text-green-400'); demoHint.classList.remove('text-red-400', 'text-indigo-400');
+            }
+            if (role === 'EMPLOYEE') {
+                 hintText = 'Demo Hint: Use 1003 (Clara Johnson)';
+                 demoHint.classList.add('text-indigo-400'); demoHint.classList.remove('text-red-400', 'text-green-400');
+            }
+            demoHint.textContent = hintText;
+
+            roleSelectionView.style.opacity = 0;
+            roleSelectionView.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                roleSelectionView.style.display = 'none';
+                loginView.style.display = 'block';
+                loginView.style.opacity = 1;
+                loginView.style.transform = 'translateY(0)';
+                loginView.style.pointerEvents = 'auto';
+            }, 100); 
+        }
+
+        function showRoleSelection() {
+            selectedRole = null;
+            
+            loginView.style.opacity = 0;
+            loginView.style.transform = 'translateY(20px)';
+            loginView.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                loginView.style.display = 'none';
+                roleSelectionView.style.display = 'block';
+                roleSelectionView.style.opacity = 1;
+                roleSelectionView.style.transform = 'translateY(0)';
+            }, 100);
+            
+            mainContainer.className = mainContainer.className.replace(/theme-[A-Z_]+/, '').trim();
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userId = parseInt(document.getElementById('username').value);
+            
+            if (!selectedRole || typeof SIMULATED_USERS === 'undefined') {
+                alert("Login Error: Role not selected or system not initialized.");
+                return;
+            }
+
+            const user = SIMULATED_USERS[userId];
+
+            let roleMatch = false;
+
+            // Group MANAGER, CFO, FINANCE under the 'MANAGER' selection card
+            const selectedRoleGroup = selectedRole === 'MANAGER' ? ['MANAGER', 'CFO', 'FINANCE', 'ADMIN_AUDIT'] : [selectedRole];
+            
+            if (user && selectedRoleGroup.includes(user.role)) {
+                roleMatch = true;
+            }
+            
+            if (roleMatch) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                window.location.href = user.redirect;
+                
+            } else if (user && !selectedRoleGroup.includes(user.role)) {
+                 const selectedRoleDisplay = selectedRole === 'MANAGER' ? 'Approver (Manager/Finance)' : selectedRole;
+                 alert(`Login Failed: User ${userId} is a ${user.role}, which does not match the selected ${selectedRoleDisplay} role group.`);
+            } else {
+                alert("Login Failed: Invalid User ID.");
+            }
+        });
+
+        // Initial setup
+        loginView.style.display = 'none';
+    </script>
+</body>
+</html>

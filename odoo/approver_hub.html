@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QEL Approver Hub - Hybrid Flow & DLT Monitoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        .card {
+            background-color: #1e293b;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid #334155;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            background-color: #1e293b;
+            color: #94a3b8;
+            font-weight: 600;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button:hover {
+            color: #e2e8f0;
+            background-color: #334155;
+        }
+        .tab-button.active {
+            background-color: #334155;
+            color: #a78bfa; 
+            border-bottom: 2px solid #a78bfa;
+        }
+        .tab-button-admin {
+            color: #f87171 !important;
+        }
+        .tab-button-admin.active {
+            border-bottom-color: #f87171 !important;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 15px;
+        }
+        th {
+            background-color: #0f172a;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        .action-btn {
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-weight: 700;
+            transition: background-color 0.2s;
+        }
+        .approve-btn { background-color: #10b981; color: #0f172a; }
+        .approve-btn:hover { background-color: #059669; }
+        .reject-btn { background-color: #ef4444; color: #fff; }
+        .reject-btn:hover { background-color: #dc2626; }
+        .risk-HIGH { color: #f87171; font-weight: bold; }
+        .risk-LOW { color: #34d399; }
+        .risk-MEDIUM { color: #fcd34d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-extrabold text-green-400">QEL Approver Hub - Governance Dashboard</h1>
+            <div class="flex items-center space-x-6">
+                <div class="text-right">
+                    <span class="block text-xl font-semibold" id="userName"></span>
+                    <span class="text-sm text-gray-400">Role: <span id="userRole"></span> | ID: <span id="userId"></span></span>
+                </div>
+                <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 px-5 py-2.5 rounded-lg font-bold transition">Sign Out</button>
+            </div>
+        </div>
+
+        <div class="mb-0 flex space-x-2 border-b-2 border-gray-700">
+            <button class="tab-button active" onclick="openTab(event, 'ApprovalQueue')">Approval Queue (Hybrid Flow)</button>
+            <button class="tab-button" onclick="openTab(event, 'DLTMonitor')">DLT & Liquidity Monitor</button>
+            <button id="adminTabBtn" class="tab-button tab-button-admin hidden" onclick="openTab(event, 'AdminAuditCenter')">Admin/Audit Center (Override, User Config)</button>
+        </div>
+        
+        <div class="mt-4">
+            <div id="ApprovalQueue" class="tab-content card">
+                <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-purple-400">Claims Requiring Your Action (Sequence: <span id="currentSequence">1</span>)</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="py-3 px-4">ID</th>
+                                <th class="py-3 px-4">Employee</th>
+                                <th class="py-3 px-4">Amount (USD)</th>
+                                <th class="py-3 px-4">AI Insight / Risk</th>
+                                <th class="py-3 px-4">Hybrid Approval Flow Details</th>
+                                <th class="py-3 px-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvalQueueBody" class="divide-y divide-gray-800 text-sm">
+                            <tr><td colspan="6" class="text-center py-4 text-gray-400">No expenses requiring your approval.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="DLTMonitor" class="tab-content card hidden">
+                 <h2 class="text-2xl font-bold mb-6 border-b border-gray-700 pb-2 text-yellow-400">Real-time System Status</h2>
+                 <div class="grid grid-cols-3 gap-8">
+                     <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                        <h3 class="text-xl font-bold mb-2 text-red-400 flex items-center space-x-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.007 12.007 0 002.944 12c0 1.571.238 3.117.686 4.584A13.957 13.957 0 0112 21.056c2.72-.047 5.437-.62 7.85-1.761.53-.25.867-.79.867-1.39V7.588c0-1.602-1.306-2.908-2.908-2.908H12z"/></svg>
+                             <span>DLT Infrastructure Health</span>
+                        </h3>
+                        <div class="space-y-2 mt-4 text-sm">
+                            <p>Status: <span id="dltStatus" class="font-bold">...</span></p>
+                            <p>Avg Latency: <span id="dltLatency">...</span></p>
+                            <p>Current TPS: <span id="dltTps">...</span></p>
+                            <p>Active Nodes: <span id="dltNodes">...</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                        <h3 class="text-xl font-bold mb-2 text-orange-400 flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            <span>Settlement & Liquidity Queue</span>
+                        </h3>
+                        <div class="space-y-2 mt-4 text-sm">
+                            <p>Hourly Limit Remaining: <span id="liquidityRemaining" class="font-bold text-green-400">...</span></p>
+                            <p>Total Pending Queue: <span id="liquidityPending" class="font-bold text-red-400">...</span></p>
+                            <p>Total Settled Last Hour: <span id="liquiditySettled">...</span></p>
+                            <p class="text-xs text-gray-500 mt-2">Note: Settlement is batched if the hourly limit is exceeded.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="AdminAuditCenter" class="tab-content card hidden">
+                <h2 class="text-2xl font-bold mb-6 border-b border-gray-700 pb-2 text-red-400">Admin Control & Audit Tools (Restricted)</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <div class="bg-gray-800 p-6 rounded-xl border border-red-700">
+                        <h3 class="text-xl font-bold mb-4 text-red-400">DLT Status Override</h3>
+                        <form id="overrideForm" class="space-y-4">
+                            <input type="number" id="overrideId" placeholder="Expense ID to Override" required class="w-full p-2 bg-gray-900 border border-gray-700 rounded-md">
+                            <select id="newStatus" required class="w-full p-2 bg-gray-900 border border-gray-700 rounded-md">
+                                <option value="" disabled selected>Select New Status</option>
+                                <option value="SETTLED">SETTLED (Force Payment)</option>
+                                <option value="REJECTED">REJECTED (Force Denial)</option>
+                                <option value="PENDING">PENDING (Restart Flow)</option>
+                            </select>
+                            <textarea id="overrideReason" placeholder="Reason for Admin Override (Mandatory Audit Log)" required class="w-full p-2 bg-gray-900 border border-gray-700 rounded-md"></textarea>
+                            <button type="submit" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-md">EXECUTE OVERRIDE</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-gray-800 p-6 rounded-xl border border-blue-700 col-span-2">
+                        <h3 class="text-xl font-bold mb-4 text-blue-400">Dynamic User & Role Management</h3>
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead>
+                                <tr><th>ID</th><th>Name</th><th>Role</th><th>Manager ID</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="userManagementBody" class="divide-y divide-gray-800">
+                                </tbody>
+                        </table>
+                    </div>
+
+                     <div class="bg-gray-800 p-6 rounded-xl border border-green-700 col-span-3">
+                        <h3 class="text-xl font-bold mb-4 text-green-400">Linux Audit Tool (Simulated DLT Grep)</h3>
+                         <form id="auditForm" class="flex space-x-3 mb-4">
+                            <input type="text" id="auditKeyword" placeholder="Enter keyword (e.g., 'luxury' or 'client')" required class="flex-grow p-2 bg-gray-900 border border-gray-700 rounded-md">
+                            <button type="submit" class="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-md">RUN DLT GREP</button>
+                        </form>
+                        <pre id="auditResult" class="bg-black/50 p-3 rounded-md text-xs font-mono text-gray-300 h-32 overflow-auto">No audit performed yet.</pre>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+    <script>
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        if (!currentUser || !['ADMIN_AUDIT', 'MANAGER', 'CFO', 'FINANCE'].includes(currentUser.role)) {
+            alert("Access Denied or Session Expired. Please log in as an Approver or Admin.");
+            window.location.href = 'index.html';
+        }
+
+        const userRole = currentUser.role;
+        const userId = currentUser.id;
+        document.getElementById('userName').textContent = currentUser.name;
+        document.getElementById('userRole').textContent = userRole;
+        document.getElementById('userId').textContent = userId;
+        
+        if (userRole === 'ADMIN_AUDIT') {
+            document.getElementById('adminTabBtn').classList.remove('hidden');
+        }
+
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+        
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.add("hidden");
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.remove("hidden");
+            evt.currentTarget.classList.add("active");
+            
+            // Auto-refresh when tabs are opened
+            if (tabName === 'ApprovalQueue') renderApprovalQueue();
+            if (tabName === 'DLTMonitor') updateDLTMonitor();
+            if (tabName === 'AdminAuditCenter') renderUserManagement();
+        }
+
+        function renderApprovalQueue() {
+            const allExpenses = DB_API.get_all_expenses().sort((a, b) => b.id - a.id);
+            const tbody = document.getElementById('approvalQueueBody');
+            tbody.innerHTML = '';
+            let expensesForApproval = [];
+
+            allExpenses.forEach(e => {
+                const currentSequence = e.current_sequence;
+                
+                // Filter for current user's action
+                const eligibleStep = e.approval_flow.find(s => 
+                    s.sequence === currentSequence && 
+                    !e.status.includes('SETTLED') && !e.status.includes('REJECTED') && 
+                    (s.role.split('_')[0] === userRole || s.hybrid_roles?.includes(userRole) || (s.role === 'MANAGER' && s.manager_id === userId) || (s.role === 'FINANCE_TEAM_PERCENTAGE' && !s.approved_by.includes(userId)))
+                );
+
+                if (eligibleStep) {
+                    // Check if this user has already approved a percentage rule step in this sequence
+                    if (eligibleStep.type === 'PERCENTAGE_RULE' && eligibleStep.approved_by.includes(userId)) {
+                         return; // Skip if already approved for percentage rule
+                    }
+                    
+                    // Check if this user is the sequential manager
+                    if (eligibleStep.type === 'SEQUENTIAL' && eligibleStep.manager_id !== userId) {
+                         return; // Skip if not the designated sequential manager
+                    }
+
+                    expensesForApproval.push({ expense: e, step: eligibleStep });
+                }
+            });
+
+            if (expensesForApproval.length === 0) {
+                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-400">No expenses requiring your approval in the current sequence.</td></tr>`;
+                 return;
+            }
+
+
+            expensesForApproval.forEach(({ expense, step }) => {
+                const employeeName = DB_API.get_user_by_id(expense.employee_id).name;
+                const riskLevel = expense.fraud_risk_level;
+                const llmPolicy = expense.llm_compliance_report.policy_match;
+                const llmNote = expense.llm_compliance_report.llm_note;
+                
+                let flowDetail = '';
+                if (step.type === 'SEQUENTIAL' || step.type === 'SEQUENTIAL_FINANCE') {
+                    flowDetail = `Sequential: Waiting for ${DB_API.get_user_by_id(step.manager_id || step.approver_id)?.name || step.role}.`;
+                } else if (step.type === 'MANDATORY_ESCALATION') {
+                    flowDetail = `Mandatory Escalation to Admin/Audit (Reason: ${step.reason})`;
+                } else if (step.type === 'HYBRID_RULE' || step.type === 'PERCENTAGE_RULE') {
+                    const approvedCount = step.approved_by.length;
+                    const neededCount = step.approvers_needed;
+                    flowDetail = `${step.rule} | Approved: ${approvedCount}/${neededCount}.`;
+                }
+                
+                const row = `
+                    <tr class="hover:bg-gray-800 transition duration-150">
+                        <td class="py-3 px-4 font-mono text-gray-400">${expense.id}</td>
+                        <td class="py-3 px-4">${employeeName}</td>
+                        <td class="py-3 px-4 text-green-400 font-semibold">$${expense.amount_usd.toLocaleString()}</td>
+                        <td class="py-3 px-4">
+                            <span class="risk-${riskLevel}">${riskLevel}</span> / 
+                            <span class="text-sm font-medium text-blue-300" title="${llmNote}">${llmPolicy}</span>
+                        </td>
+                        <td class="py-3 px-4 text-sm text-gray-400" title="${flowDetail}">${flowDetail}</td>
+                        <td class="py-3 px-4 space-x-2">
+                            <button onclick="processApproval(${expense.id}, 'APPROVE')" class="action-btn approve-btn text-xs">Approve</button>
+                            <button onclick="processApproval(${expense.id}, 'REJECT')" class="action-btn reject-btn text-xs">Reject</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        function processApproval(expenseId, action) {
+             const comment = prompt(`Enter comment for ${action} of Expense ID ${expenseId}:`);
+             if (comment === null) return; // User cancelled
+             
+             const result = api_process_approval(expenseId, userRole, userId, comment, action);
+             
+             if (result.status === 'SUCCESS' || result.status === 'PENDING_HYBRID_APPROVAL') {
+                 alert(`${action} successful. New Status: ${result.new_status}`);
+             } else {
+                 alert(`Approval failed: ${result.message}`);
+             }
+             renderApprovalQueue(); // Refresh the list
+        }
+        
+        function updateDLTMonitor() {
+            const health = api_get_dlt_health_status();
+            const liquidity = api_get_settlement_queue_stats();
+
+            document.getElementById('dltStatus').textContent = health.status;
+            document.getElementById('dltStatus').className = `font-bold ${health.color}`;
+            document.getElementById('dltLatency').textContent = `${health.avg_latency_ms} ms`;
+            document.getElementById('dltTps').textContent = `${health.current_tps} TPS`;
+            document.getElementById('dltNodes').textContent = health.active_nodes;
+
+            document.getElementById('liquidityRemaining').textContent = `$${liquidity.hourly_limit_remaining.toLocaleString()}`;
+            document.getElementById('liquidityPending').textContent = `$${liquidity.total_pending_queue.toLocaleString()}`;
+            document.getElementById('liquiditySettled').textContent = `$${liquidity.total_settled_last_hour.toLocaleString()}`;
+            
+            setTimeout(updateDLTMonitor, 5000); // Auto-refresh monitor
+        }
+
+
+        // ADMIN FUNCTIONS
+        function renderUserManagement() {
+            const users = api_get_all_users_lite();
+            const tbody = document.getElementById('userManagementBody');
+            tbody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.className = 'text-sm divide-y divide-gray-800';
+                
+                const managerName = user.manager_id ? DB_API.get_user_by_id(user.manager_id)?.name : 'N/A';
+                
+                row.innerHTML = `
+                    <td class="py-2 px-4 font-mono text-gray-400">${user.id}</td>
+                    <td class="py-2 px-4">${user.name}</td>
+                    <td class="py-2 px-4">${user.role}</td>
+                    <td class="py-2 px-4" title="Manager ID: ${user.manager_id || 'N/A'}">${managerName}</td>
+                    <td class="py-2 px-4">
+                        <select id="role-${user.id}" class="bg-gray-700 p-1 text-xs rounded">
+                            ${SYSTEM_CONFIG.SUPPORTED_ROLES.map(r => 
+                                `<option value="${r}" ${user.role === r ? 'selected' : ''}>${r}</option>`
+                            ).join('')}
+                        </select>
+                        ${user.role === 'EMPLOYEE' ? `<input type="number" id="mgr-${user.id}" placeholder="Mgr ID" value="${user.manager_id || ''}" class="bg-gray-700 p-1 w-16 text-xs rounded mt-1">` : ''}
+                        <button onclick="updateUserRole(${user.id})" class="ml-2 py-1 px-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">Update</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function updateUserRole(targetId) {
+            const newRole = document.getElementById(`role-${targetId}`).value;
+            let newManagerId = null;
+            if (newRole === 'EMPLOYEE') {
+                newManagerId = document.getElementById(`mgr-${targetId}`).value;
+            }
+
+            const result = api_update_user_role(targetId, newRole, newManagerId);
+            alert(result.message);
+            if (result.success) renderUserManagement();
+        }
+        
+        document.getElementById('overrideForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const expenseId = parseInt(document.getElementById('overrideId').value);
+            const newStatus = document.getElementById('newStatus').value;
+            const reason = document.getElementById('overrideReason').value;
+            
+            const result = api_admin_override_status(expenseId, newStatus, reason);
+            
+            if (result.status === 'SUCCESS') {
+                alert(`Admin Override Success! Expense ${expenseId} status set to ${result.new_status}.`);
+            } else {
+                alert(`Admin Override Failed: ${result.message}`);
+            }
+            renderApprovalQueue();
+            this.reset();
+        });
+
+        document.getElementById('auditForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const keyword = document.getElementById('auditKeyword').value;
+            const result = api_audit_dlt_ledger(keyword, "description");
+            const output = document.getElementById('auditResult');
+            
+            let resultText = `--- DLT Audit Result ---\n`;
+            resultText += `Query: ${result.query}\n`;
+            resultText += `Note: ${result.audit_note}\n\n`;
+            
+            if (result.results_count > 0) {
+                result.matching_expenses.forEach(e => {
+                    resultText += `ID: ${e.id} | Amount: $${e.amount_usd.toFixed(2)} | Status: ${e.status}\n`;
+                });
+            } else {
+                resultText += `No matching entries found in the immutable DLT ledger.\n`;
+            }
+            
+            output.textContent = resultText;
+        });
+
+
+        // Initial view setup
+        renderApprovalQueue();
+        updateDLTMonitor();
+    </script>
+</body>
+</html>

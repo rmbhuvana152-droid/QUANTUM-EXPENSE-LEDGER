@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Approval Queue - GlobalTech SEP (AI)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc; /* Light background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+        .ai-recommendation-badge {
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        /* New Recommendation Classes */
+        .ai-approve { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .ai-review { background-color: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .ai-escalate { background-color: #fef3c7; color: #92400e; border: 1px solid #d97706; }
+        .ai-pass { background-color: #e0f2fe; color: #0c4a6e; border: 1px solid #3b82f6; }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-7xl mx-auto card p-10 border-t-4 border-green-600">
+        
+        <header class="mb-8 border-b pb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-green-700">Manager Approval Dashboard</h1>
+                <p class="text-lg text-gray-500 mt-1">AI assistance from **ZKP Policy** and **Anomaly Detection** for approval optimization.</p>
+            </div>
+            <a href="index.html" class="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Logout</a>
+        </header>
+        
+        <p class="mb-6 text-sm text-gray-500">Queue automatically refreshes every 5 seconds for a real-time view. Pending ADMIN_AUDIT claims are hidden from this view.</p>
+
+        <div id="approvalList" class="space-y-4">
+            </div>
+    </div>
+
+    <div id="approvalModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-gray-700">Review Expense #<span id="modalExpenseId"></span></h2>
+            
+            <div class="mb-4 p-4 border-l-4 border-indigo-500 bg-indigo-50 rounded-md">
+                <p class="font-bold text-lg text-indigo-800">Compliance & Risk Summary</p>
+                <p class="mt-2 text-sm text-gray-700">**ZKP Status:** <span id="modalZkpStatus" class="font-bold"></span></p>
+                <p class="text-sm text-gray-700">**AD Risk Level:** <span id="modalADRiskLevel" class="font-bold"></span> (<span id="modalADRiskScore"></span>/99)</p>
+            </div>
+            
+            <p class="mt-4 text-sm text-gray-700">**AI Final Recommendation:** <span id="modalAIRecommendation" class="font-extrabold text-lg"></span></p>
+
+            <p class="mb-2 mt-4"><strong>Amount (USD):</strong> <span id="modalAmount" class="font-bold text-lg text-green-700"></span></p>
+            <p class="mb-4"><strong>Submitted by:</strong> <span id="modalEmployee"></span></p>
+            <p class="mb-4"><strong>LLM Flow Step:</strong> <span id="modalFlowStep" class="font-medium text-blue-600"></span></p>
+
+            <textarea id="approvalComment" rows="3" placeholder="Enter reason/comment (optional)" class="p-3 border border-gray-300 rounded-lg w-full mb-6 focus:ring-green-500"></textarea>
+
+            <div class="flex justify-between space-x-4">
+                <button onclick="handleApproval('REJECT')" class="flex-1 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition duration-150">Reject Claim</button>
+                <button onclick="handleApproval('APPROVE')" class="flex-1 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition duration-150">Approve Claim</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Modal close function
+        document.getElementById('approvalModal').addEventListener('click', function(e) {
+            if (e.target.id === 'approvalModal') {
+                this.classList.add('hidden');
+                this.classList.remove('flex');
+            }
+        });
+    </script>
+    <script src="scripts.js"></script>
+    <script>
+        const CURRENT_USER = JSON.parse(localStorage.getItem('currentUser')) || { id: 1002, role: "MANAGER" };
+        const APPROVER_ROLE = CURRENT_USER.role;
+        let currentExpenseId = null;
+        let approvalQueueInterval;
+
+        // --- NEW COMPLEX AI LOGIC (The "Auto-Like" Function) ---
+        function getAIRecommendation(expense) {
+            const flowLength = expense.approval_flow.length;
+            const isFinalStep = expense.current_sequence === flowLength;
+            const isCompliant = expense.zkp_status === 'COMPLIANT';
+            const isLowRisk = expense.fraud_risk_level === 'LOW';
+
+            // 1. Policy Breach OR Medium/High Risk
+            if (!isCompliant || expense.fraud_risk_level === 'MEDIUM' || expense.fraud_risk_level === 'HIGH') {
+                let reason = 'Policy/Risk Check Required';
+                if (!isCompliant) reason = 'Policy Breach (ZKP)';
+                else if (expense.fraud_risk_level === 'HIGH') reason = 'High Fraud Risk (AD)';
+                
+                return { 
+                    text: `REVIEW REQUIRED: ${reason}`, 
+                    class: "ai-review", 
+                    action: "REVIEW"
+                };
+            }
+
+            // 2. Clear Path (Compliant AND Low Risk)
+            if (isCompliant && isLowRisk) {
+                if (isFinalStep) {
+                     return { 
+                        text: "AUTO-APPROVE CANDIDATE (Instant Settle)", 
+                        class: "ai-approve", 
+                        action: "APPROVE_FINAL"
+                    };
+                } else {
+                    return { 
+                        text: "LOW-RISK PASS (Approve & Forward)", 
+                        class: "ai-pass", 
+                        action: "APPROVE_PASS"
+                    };
+                }
+            }
+            
+            return { text: "Pending Analysis", class: "bg-gray-200 text-gray-700 border-gray-500", action: "REVIEW" };
+        }
+        // --- END NEW COMPLEX AI LOGIC ---
+
+
+        function getZkpClass(status) {
+            return status === 'COMPLIANT' ? 'bg-green-100 text-green-800 border-green-500' : 'bg-red-100 text-red-800 border-red-500';
+        }
+
+        function getADClass(level) {
+            if (level === 'LOW') return 'bg-green-100 text-green-800';
+            if (level === 'MEDIUM') return 'bg-yellow-100 text-yellow-800';
+            if (level === 'HIGH') return 'bg-red-110 text-red-800';
+            return 'bg-gray-200 text-gray-700';
+        }
+
+        function renderExpenseCard(expense) {
+            const employeeName = SIMULATED_USERS[expense.employee_id] ? SIMULATED_USERS[expense.employee_id].name.split(' (')[0] : 'Unknown User';
+            const statusClass = getZkpClass(expense.zkp_status);
+            const adClass = getADClass(expense.fraud_risk_level);
+            const aiRec = getAIRecommendation(expense);
+
+            return `
+                <div class="flex justify-between items-center p-5 card border-b-4 ${expense.zkp_status === 'COMPLIANT' ? 'border-green-500' : 'border-red-500'} hover:shadow-xl transition duration-150">
+                    <div class="flex-1">
+                        <p class="text-xl font-bold text-gray-800">Claim #${expense.id} - ${expense.category}</p>
+                        <p class="text-sm text-gray-500 mt-1">Submitted by ${employeeName} | Location: ${expense.location}</p>
+                    </div>
+                    
+                    <div class="text-right flex items-center space-x-6">
+                        
+                        <div class="ai-recommendation-badge ${aiRec.class}">
+                            ${aiRec.text}
+                        </div>
+                        
+                        <div class="w-32 text-center p-2 rounded-md ${statusClass} font-extrabold text-sm border">
+                            ZKP: ${expense.zkp_status.substring(0, 4)}
+                            <div class="text-xs ${adClass} font-medium mt-1 rounded">AD: ${expense.fraud_risk_level}</div>
+                        </div>
+
+                        <div class="text-2xl font-extrabold text-indigo-700 w-32">
+                            ${expense.amount_usd.toFixed(2)} ${COMPANY_BASE_CURRENCY}
+                        </div>
+                        
+                        <button onclick="openModal(${expense.id})" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
+                            Review
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadApprovalQueue() {
+            // Filter expenses waiting for THIS approver (Manager)
+            // Exclude claims that were auto-escalated to ADMIN_AUDIT
+            const queue = expenses.filter(e => e.status.includes(`PENDING_${APPROVER_ROLE}`) || e.status.includes(`PENDING_FINANCE`));
+            const listContainer = document.getElementById('approvalList');
+            
+            if (queue.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-500 p-8 border rounded-xl bg-white text-center text-lg font-medium">Your approval queue is clear! The protocol is running smoothly.</p>';
+                return;
+            }
+
+            listContainer.innerHTML = queue.map(renderExpenseCard).join('');
+        }
+
+        function openModal(expenseId) {
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            currentExpenseId = expenseId;
+            const aiRec = getAIRecommendation(expense);
+            const employeeName = SIMULATED_USERS[expense.employee_id] ? SIMULATED_USERS[expense.employee_id].name.split(' (')[0] : 'Unknown User';
+
+            document.getElementById('modalExpenseId').textContent = expenseId;
+            document.getElementById('modalAmount').textContent = `${expense.amount_usd.toFixed(2)} ${COMPANY_BASE_CURRENCY}`;
+            document.getElementById('modalEmployee').textContent = employeeName;
+            
+            const currentStep = expense.approval_flow.find(s => s.sequence === expense.current_sequence);
+            document.getElementById('modalFlowStep').textContent = `${expense.current_sequence} of ${expense.approval_flow.length} (${currentStep ? currentStep.type : 'N/A'})`;
+            
+            // Display Dual Status
+            document.getElementById('modalZkpStatus').textContent = expense.zkp_status;
+            document.getElementById('modalZkpStatus').style.color = expense.zkp_status === 'COMPLIANT' ? '#10B981' : '#EF4444';
+            
+            document.getElementById('modalADRiskLevel').textContent = expense.fraud_risk_level;
+            document.getElementById('modalADRiskLevel').style.color = (expense.fraud_risk_level === 'LOW' ? '#10B981' : (expense.fraud_risk_level === 'MEDIUM' ? '#D97706' : '#EF4444'));
+            document.getElementById('modalADRiskScore').textContent = expense.fraud_risk_score;
+
+            // Display AI Recommendation in Modal
+            document.getElementById('modalAIRecommendation').textContent = aiRec.text;
+            document.getElementById('modalAIRecommendation').className = aiRec.class;
+
+
+            document.getElementById('approvalModal').classList.remove('hidden');
+            document.getElementById('approvalModal').classList.add('flex');
+        }
+
+        function handleApproval(action) {
+            const comment = document.getElementById('approvalComment').value;
+            
+            // Process the approval using the backend logic from scripts.js
+            const result = api_process_approval(currentExpenseId, APPROVER_ROLE, comment, action);
+            
+            if (result.status === "SUCCESS") {
+                console.log(`Action ${action} successfully logged on DLT. New Status: ${result.new_status}.`);
+            } else {
+                alert(`Error: ${result.message}`);
+            }
+
+            document.getElementById('approvalModal').classList.add('hidden');
+            loadApprovalQueue(); 
+            // Clear comment field for next use
+            document.getElementById('approvalComment').value = ''; 
+        }
+
+        function startQueueRefresh() {
+            loadApprovalQueue();
+            // Start the real-time update loop
+            approvalQueueInterval = setInterval(loadApprovalQueue, 5000); 
+        }
+
+        // Initialize queue load
+        startQueueRefresh();
+    </script>
+</body>
+</html>

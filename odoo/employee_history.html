@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEP Employee Portal - Autonomous Submission</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0c0c1e; /* Deep indigo background */
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        .card {
+            background-color: #1a1a36; /* Darker card background */
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid #333366;
+        }
+        input, select, textarea {
+            background-color: #252549;
+            border: 1px solid #4a4a8c;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.5);
+        }
+        .header {
+            border-bottom: 2px solid #333366;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        .status-PENDING { background-color: #f59e0b; color: #1f2937; }
+        .status-REJECTED { background-color: #dc2626; color: #fff; }
+        .status-SETTLED { background-color: #10b981; color: #fff; }
+        .risk-HIGH { color: #f87171; font-weight: bold; }
+        .risk-LOW { color: #34d399; }
+        .risk-MEDIUM { color: #fcd34d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header flex justify-between items-center">
+            <h1 class="text-4xl font-extrabold" style="color: #a78bfa;">SEP Employee Portal - Autonomous Submission</h1>
+            <div class="flex items-center space-x-6">
+                <div class="text-right">
+                    <span class="block text-xl font-semibold" id="userName"></span>
+                    <span class="text-sm text-gray-400">Employee ID: <span id="userId"></span></span>
+                </div>
+                <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 px-5 py-2.5 rounded-lg font-bold transition">Sign Out</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="lg:col-span-4 space-y-8">
+                
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-blue-400">OCR & Auto-Generate (Mock)</h2>
+                    <p class="text-gray-400 mb-4 text-sm">Simulate receipt scanning and AI data extraction. Fields below will be automatically populated.</p>
+                    <button onclick="simulateOCR()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-150 flex items-center justify-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.218A2 2 0 0110.133 4h3.734a2 2 0 011.664.89l.812 1.218A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        SCAN RECEIPT & EXTRACT DATA
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-purple-400">Manual DLT Submission</h2>
+                    <form id="expenseForm" class="space-y-5">
+                        
+                        <div id="aiBudget" class="bg-indigo-900/50 p-4 rounded-md text-sm border border-indigo-700">
+                            <p class="font-bold text-indigo-300 flex justify-between items-center">
+                                <span>AI Predictive Max Spend (USD)</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v14c0 1.1-.9 2-2 2H9zm3-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+                            </p>
+                            <span id="budgetDisplay" class="text-3xl font-mono text-green-400">$0.00</span>
+                            <p id="budgetBasis" class="text-xs text-gray-400 mt-1">Basis: Select Location and Category</p>
+                            <input type="hidden" id="maxBudgetUsd">
+                        </div>
+
+                        <div>
+                            <label for="category" class="block text-sm font-medium mb-1">Category</label>
+                            <select id="category" required onchange="fetchPredictiveBudget()">
+                                <option value="" disabled selected>Select Category</option>
+                                <option value="Meals">Meals</option>
+                                <option value="Travel">Travel</option>
+                                <option value="Consulting">Client Consulting</option>
+                                <option value="Office">Office Supplies</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="location" class="block text-sm font-medium mb-1">Location</label>
+                            <select id="location" required onchange="fetchPredictiveBudget()">
+                                <option value="" disabled selected>Select Location</option>
+                                <option value="New York">New York</option>
+                                <option value="London">London</option>
+                                <option value="Paris">Paris</option>
+                                <option value="Mysuru">Mysuru</option>
+                                <option value="Other">Other (Default Cost)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="expenseDate" class="block text-sm font-medium mb-1">Expense Date</label>
+                                <input type="date" id="expenseDate" required onchange="runPreSubmissionChecks(false)">
+                            </div>
+                            <div>
+                                <label for="expenseTime" class="block text-sm font-medium mb-1">Expense Time</label>
+                                <input type="time" id="expenseTime" required onchange="runPreSubmissionChecks(false)">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="col-span-2">
+                                <label for="amount" class="block text-sm font-medium mb-1">Amount</label>
+                                <input type="number" id="amount" placeholder="e.g. 50.00" required min="0.01" step="0.01" oninput="updateUsdConversion(); runPreSubmissionChecks(false);">
+                            </div>
+                            <div>
+                                <label for="currency" class="block text-sm font-medium mb-1">Currency</label>
+                                <select id="currency" required onchange="updateUsdConversion(); runPreSubmissionChecks(false);">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <p id="usdConversion" class="text-sm text-gray-400 font-mono">Converted to USD: $0.00</p>
+                        <input type="hidden" id="amountUsd">
+                        
+                        <div>
+                            <label for="description" class="block text-sm font-medium mb-1">Transaction Context (Max 255 chars)</label>
+                            <textarea id="description" rows="3" placeholder="Client dinner on 2025-10-01 for Project Alpha" required maxlength="255"></textarea>
+                        </div>
+                        
+                        <div id="preSubmissionAlert" class="bg-red-900/50 p-4 rounded-md text-sm text-red-300 hidden border border-red-700">
+                            <p class="font-bold flex items-center space-x-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 3c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <span>Risk Engine Alert:</span>
+                            </p>
+                            <p id="alertMessage" class="mt-1"></p>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition duration-150 shadow-lg">
+                            SUBMIT TO SECURE DLT LEDGER
+                        </button>
+                    </form>
+                </div>
+                
+            </div>
+
+            <div class="lg:col-span-8">
+                <div class="card h-full">
+                    <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-yellow-400">Expense History & Status Tracking</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead>
+                                <tr class="text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900/50">
+                                    <th class="py-3 px-4">ID</th>
+                                    <th class="py-3 px-4">Description</th>
+                                    <th class="py-3 px-4">Amount (USD)</th>
+                                    <th class="py-3 px-4">Risk/Compliance</th>
+                                    <th class="py-3 px-4">ZKP Proof</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Next Step</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody" class="divide-y divide-gray-800 text-sm">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+    <script>
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        if (!currentUser || currentUser.role !== 'EMPLOYEE') {
+            alert("Access Denied or Session Expired. Please log in as an Employee.");
+            window.location.href = 'index.html';
+        }
+
+        const employeeId = currentUser.id;
+        document.getElementById('userName').textContent = SIMULATED_USERS[employeeId].name;
+        document.getElementById('userId').textContent = employeeId;
+
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+        
+        // OCR Simulation
+        function simulateOCR() {
+            document.getElementById('category').value = 'Travel';
+            document.getElementById('location').value = 'London';
+            document.getElementById('amount').value = 320.55;
+            document.getElementById('currency').value = 'GBP';
+            document.getElementById('description').value = 'First class flight upgrade (Luxury Travel) to London for Q4 client pitch.';
+            
+            // Set date to 2 days ago, out of hours
+            const now = new Date();
+            now.setDate(now.getDate() - 2);
+            document.getElementById('expenseDate').value = now.toISOString().substring(0, 10);
+            document.getElementById('expenseTime').value = '23:45';
+            
+            updateUsdConversion();
+            fetchPredictiveBudget();
+            runPreSubmissionChecks(false);
+            alert("OCR Simulation Complete: Data extracted and fields populated. Note the high amount, out-of-hours time, and descriptive keywords for the AI engine to flag risk!");
+        }
+
+
+        function updateUsdConversion() {
+            const amount = parseFloat(document.getElementById('amount').value) || 0;
+            const currency = document.getElementById('currency').value;
+            const rate = getFxRate(currency);
+            
+            const amountUsd = (amount * rate).toFixed(2);
+            document.getElementById('usdConversion').textContent = `Converted to USD (Rate: ${rate.toFixed(4)}): $${amountUsd}`;
+            document.getElementById('amountUsd').value = amountUsd; 
+        }
+
+        // FEATURE 6: Predictive Budget Fetcher
+        function fetchPredictiveBudget() {
+            const location = document.getElementById('location').value;
+            const category = document.getElementById('category').value;
+
+            if (location && category) {
+                const budgetData = api_get_predictive_budget(employeeId, location, category);
+                document.getElementById('budgetDisplay').textContent = `$${budgetData.max_spend}`;
+                document.getElementById('budgetBasis').textContent = budgetData.basis_note;
+                document.getElementById('maxBudgetUsd').value = budgetData.max_spend;
+            } else {
+                 document.getElementById('budgetDisplay').textContent = `$0.00`;
+                 document.getElementById('budgetBasis').textContent = "Basis: Select Location and Category";
+                 document.getElementById('maxBudgetUsd').value = 0;
+            }
+        }
+        
+        // FEATURE 1: Pre-Submission Anomaly Check
+        async function runPreSubmissionChecks(promptUser = true) {
+            const expenseDate = document.getElementById('expenseDate').value;
+            const expenseTime = document.getElementById('expenseTime').value;
+            const amountUsd = parseFloat(document.getElementById('amountUsd').value);
+            const category = document.getElementById('category').value;
+            const location = document.getElementById('location').value;
+
+            if (!expenseDate || !expenseTime || !amountUsd || !category || !location || isNaN(amountUsd)) {
+                 document.getElementById('preSubmissionAlert').classList.add('hidden');
+                 return true; 
+            }
+
+            const expenseDateTime = `${expenseDate}T${expenseTime}:00`;
+            const fraud_data = api_get_fraud_risk_score(employeeId, amountUsd, category, location, expenseDateTime);
+
+            const alertDiv = document.getElementById('preSubmissionAlert');
+            const alertMsg = document.getElementById('alertMessage');
+
+            if (fraud_data.risk_level === 'HIGH') {
+                alertMsg.innerHTML = `This claim triggered a **HIGH FRAUD RISK** score (${fraud_data.score}%). Submitting will trigger a **MANDATORY ADMIN ESCALATION** flow.`;
+                alertDiv.classList.remove('hidden');
+                
+                if (promptUser && !confirm('WARNING: High Fraud Risk Detected. Continue with submission?')) {
+                    return false;
+                }
+            } else if (fraud_data.risk_level === 'MEDIUM') {
+                alertMsg.innerHTML = `**MEDIUM FRAUD RISK** detected (${fraud_data.score}%). This may be due to out-of-hours submission or high amount. It will be flagged for Manager review.`;
+                alertDiv.classList.remove('hidden');
+            } else {
+                alertDiv.classList.add('hidden');
+            }
+            return true;
+        }
+        
+        // Form Submission Handler
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const checksPassed = await runPreSubmissionChecks(true);
+            if (!checksPassed) {
+                return;
+            }
+
+            const amountUsd = parseFloat(document.getElementById('amountUsd').value);
+            const maxBudgetUsd = parseFloat(document.getElementById('maxBudgetUsd').value);
+
+            if (amountUsd <= 0 || isNaN(amountUsd)) {
+                 alert("Please enter a valid expense amount and select currency/location.");
+                 return;
+            }
+            if (!document.getElementById('location').value || !document.getElementById('category').value) {
+                alert("Please select a location and category for the expense.");
+                return;
+            }
+            
+            // Step 2: Assemble Data
+            const formData = {
+                employee_id: employeeId,
+                amount: parseFloat(document.getElementById('amount').value),
+                currency: document.getElementById('currency').value,
+                amount_usd: amountUsd,
+                category: document.getElementById('category').value,
+                location: document.getElementById('location').value,
+                date: document.getElementById('expenseDate').value,
+                time: document.getElementById('expenseTime').value,
+                description: document.getElementById('description').value,
+            };
+
+            // Step 3: Submit to DLT Ledger via API (api_submit_expense)
+            const newExpense = api_submit_expense(formData);
+            
+            alert(`Expense Submitted! ID: ${newExpense.id}. Status: ${newExpense.status}. Approval Flow: ${newExpense.approval_flow.map(f => f.role).join(' -> ')}`);
+
+            // Reset form and reload data
+            document.getElementById('expenseForm').reset();
+            updateUsdConversion();
+            fetchPredictiveBudget();
+            loadEmployeeData();
+            runPreSubmissionChecks(false);
+        });
+
+        // Render History Table
+        function renderExpenseTable(userExpenses) {
+            const tbody = document.getElementById('expenseTableBody');
+            tbody.innerHTML = ''; 
+
+            userExpenses.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+
+            userExpenses.forEach(expense => {
+                const row = tbody.insertRow();
+                row.className = 'hover:bg-gray-800 transition duration-100';
+
+                // Determine next approval step
+                let nextStep = "N/A";
+                if (expense.status.startsWith('PENDING_')) {
+                    const currentFlow = expense.approval_flow.find(f => f.sequence === expense.current_sequence);
+                    nextStep = currentFlow ? `P. ${currentFlow.role}` : 'Flow Complete';
+                } else if (expense.status.startsWith('SETTLED')) {
+                    nextStep = 'Settlement Complete';
+                }
+
+                row.innerHTML = `
+                    <td class="py-3 px-4 font-mono text-xs text-purple-300">${expense.id}</td>
+                    <td class="py-3 px-4">${expense.description.substring(0, 30)}...</td>
+                    <td class="py-3 px-4 text-green-400 font-bold">$${expense.amount_usd}</td>
+                    <td class="py-3 px-4">
+                        <span class="text-xs risk-${expense.fraud_risk_level}">${expense.fraud_risk_level}</span> / 
+                        <span class="text-xs risk-${expense.llm_compliance_report.policy_match === 'LOW' ? 'HIGH' : 'LOW'}">${expense.llm_compliance_report.policy_match}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="font-bold text-xs ${expense.zkp_status === 'NON_COMPLIANT' ? 'text-red-500' : 'text-green-500'}">${expense.zkp_status.replace('_', ' ')}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="status-badge status-${expense.status.split('_')[0]}">${expense.status.replace(/_/g, ' ')}</span>
+                    </td>
+                    <td class="py-3 px-4 text-yellow-400 font-medium">${nextStep}</td>
+                `;
+            });
+        }
+        
+        function loadEmployeeData() {
+             const allExpenses = DB_API.get_all_expenses();
+             const userExpenses = allExpenses.filter(e => e.employee_id === employeeId);
+             renderExpenseTable(userExpenses);
+        }
+        
+        // --- Initialization ---
+        function initialize() {
+             loadEmployeeData();
+             fetchPredictiveBudget(); 
+             updateUsdConversion();
+             
+             // Set default date/time to now for easy testing
+             const now = new Date();
+             const dateString = now.toISOString().substring(0, 10);
+             const timeString = now.toTimeString().substring(0, 5);
+             document.getElementById('expenseDate').value = dateString;
+             document.getElementById('expenseTime').value = timeString;
+             
+             // Trigger initial check for a clean start
+             runPreSubmissionChecks(false);
+        }
+        
+        initialize();
+    </script>
+</body>
+</html>
